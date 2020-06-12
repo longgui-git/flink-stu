@@ -1,0 +1,101 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.myorg.quickstart;
+
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapPartitionFunction;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.AggregateOperator;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.FlatMapOperator;
+import org.apache.flink.api.java.operators.MapPartitionOperator;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.util.Collector;
+
+/**
+ * Skeleton for a Flink Batch Job.
+ *
+ * <p>For a tutorial how to write a Flink batch application, check the
+ * tutorials and examples on the <a href="https://flink.apache.org/docs/stable/">Flink Website</a>.
+ *
+ * <p>To package your application into a JAR file for execution,
+ * change the main class in the POM.xml file to this class (simply search for 'mainClass')
+ * and run 'mvn clean package' on the command line.
+ */
+public class BatchJob {
+
+	public static void main(String[] args) throws Exception {
+		// set up the batch execution environment
+		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+        DataSource<String> text = env.fromElements("To be or not to be,is a quest");
+
+        AggregateOperator<Tuple2<String, Integer>> result =
+        text.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+
+            @Override
+            public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
+                String[] split = s.toLowerCase().split("\\W+");
+                for (String s1 : split) {
+                    if (s1.length() > 0) {
+                        collector.collect(new Tuple2<String, Integer>(s1, 1));
+                    }
+                }
+            }
+        })
+//        .filter(a->{
+//            boolean b = a.f0.length() > 2;
+//            return b ? true : false;})
+        .groupBy(0).sum(1);
+
+        AggregateOperator<Tuple2<String, Integer>> sum = result.mapPartition(new MapPartitionFunction<Tuple2<String, Integer>, Tuple2<String, Integer>>() {
+            @Override
+            public void mapPartition(Iterable<Tuple2<String, Integer>> values, Collector<Tuple2<String, Integer>> out) throws Exception {
+                values.forEach(a->{
+                    out.collect(new Tuple2<String, Integer>(a.f0+" ==",a.f1));
+                });
+            }
+        }).groupBy(0).sum(1);
+
+
+
+        sum.print();
+        System.out.println("======");
+//        result.print();
+
+        // execute program
+//		env.execute("Flink Batch Java API Skeleton");
+	}
+
+
+//	public static class Tokenizer implements FlatMapFunction<String, Tuple2<String, Integer>>{
+//
+//
+//        @Override
+//        public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
+//
+//            s.toLowerCase().split("\\")
+//
+//        }
+//    }
+
+
+}
