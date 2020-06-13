@@ -34,7 +34,6 @@ public class KafkaReadTool {
 
 	public static void main(String[] args) throws Exception {
 
-        // perception_out_test_1390515961993707490
 		String debugCrossId = "1390515961993707490";
 		ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
